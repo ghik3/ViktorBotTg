@@ -16,11 +16,10 @@ from .db import (
 
 user_router = Router()
 
-# АНТИСПАМ НАСТРОЙКИ
-TICKET_COOLDOWN_SEC = 60          # 1 тикет в минуту
-TICKET_WINDOW_SEC = 600           # окно 10 минут
-TICKET_MAX_PER_WINDOW = 3         # максимум 3 тикета за 10 минут
-CALL_COOLDOWN_SEC = 60            # позвать оператора не чаще раза в минуту
+TICKET_COOLDOWN_SEC = 60
+TICKET_WINDOW_SEC = 600
+TICKET_MAX_PER_WINDOW = 3
+CALL_COOLDOWN_SEC = 60
 
 
 class TicketFlow(StatesGroup):
@@ -59,7 +58,6 @@ async def ticket_text(message: Message, state: FSMContext, bot, config):
 
     now = int(time.time())
 
-    # антиспам: кулдаун по тикетам
     limits = await get_user_limits(message.from_user.id)
     if now - int(limits["last_ticket_ts"]) < TICKET_COOLDOWN_SEC:
         wait = TICKET_COOLDOWN_SEC - (now - int(limits["last_ticket_ts"]))
@@ -67,7 +65,6 @@ async def ticket_text(message: Message, state: FSMContext, bot, config):
         await state.clear()
         return
 
-    # антиспам: лимит тикетов за окно
     cnt = await count_tickets_in_window(message.from_user.id, now - TICKET_WINDOW_SEC)
     if cnt >= TICKET_MAX_PER_WINDOW:
         await message.answer("🚫 Слишком много заявок за короткое время. Попробуй позже.", reply_markup=main_menu())
@@ -83,6 +80,7 @@ async def ticket_text(message: Message, state: FSMContext, bot, config):
         created_ts=now,
         created_at=created_at
     )
+
     await set_last_ticket_ts(message.from_user.id, now)
 
     await state.clear()
@@ -92,7 +90,6 @@ async def ticket_text(message: Message, state: FSMContext, bot, config):
         reply_markup=main_menu()
     )
 
-    # админу — БЕЗ Markdown, чтобы не падало на символах
     uname = f"@{message.from_user.username}" if message.from_user.username else "(без username)"
     admin_text = (
         f"🆕 Новая заявка #{ticket_id}\n"
@@ -108,7 +105,6 @@ async def ticket_text(message: Message, state: FSMContext, bot, config):
             admin_text,
             reply_markup=admin_ticket_kb(ticket_id)
         )
-        # сохраняем связь: reply на это сообщение -> нужный ticket_id
         ADMIN_MSG_TO_TICKET[sent.message_id] = ticket_id
     except Exception as e:
         print(f"[ADMIN_SEND_ERROR] {e}")

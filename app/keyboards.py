@@ -20,7 +20,6 @@ def back_menu() -> ReplyKeyboardMarkup:
         resize_keyboard=True
     )
 
-# Кнопки под заявкой у админа (быстрые действия)
 def admin_ticket_kb(ticket_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[

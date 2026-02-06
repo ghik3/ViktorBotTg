@@ -10,7 +10,6 @@ admin_router = Router()
 def is_admin(user_id: int, config) -> bool:
     return user_id == config["admin_id"]
 
-# ✅ Админ отвечает игроку простым Reply на сообщение с заявкой
 @admin_router.message(F.reply_to_message)
 async def admin_reply_via_reply(message: Message, bot, config):
     if not is_admin(message.from_user.id, config):
@@ -19,7 +18,7 @@ async def admin_reply_via_reply(message: Message, bot, config):
     replied = message.reply_to_message
     tid = ADMIN_MSG_TO_TICKET.get(replied.message_id)
     if not tid:
-        return  # это не заявка
+        return
 
     ticket = await get_ticket(tid)
     if not ticket:
@@ -35,7 +34,6 @@ async def admin_reply_via_reply(message: Message, bot, config):
     await mark_admin_replied(tid, int(time.time()))
     await message.answer(f"✅ Отправлено игроку (заявка #{tid}).")
 
-# ✅ Кнопки: закрыть/удалить
 @admin_router.callback_query(F.data.startswith(("tclose:", "tdelete:")))
 async def admin_ticket_actions(c: CallbackQuery, bot, config):
     if not is_admin(c.from_user.id, config):
@@ -58,7 +56,6 @@ async def admin_ticket_actions(c: CallbackQuery, bot, config):
         except Exception as e:
             print(f"[USER_SEND_ERROR] {e}")
 
-    # убираем кнопки и показываем результат
     try:
         await c.message.edit_text(f"✅ Готово: заявка #{tid} {'закрыта' if action == 'tclose' else 'удалена'}.")
     except Exception:
