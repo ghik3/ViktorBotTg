@@ -5,14 +5,25 @@ from aiogram.fsm.context import FSMContext
 from datetime import datetime, timezone
 import time
 
-from .keyboards import main_menu, back_menu, admin_ticket_kb
-from .support_bridge import ADMIN_MSG_TO_TICKET
-from . import texts
-from .db import (
-    create_ticket, get_ticket,
-    get_user_limits, set_last_ticket_ts, set_last_call_ts,
-    count_tickets_in_window
-)
+# FIX: двойные импорты (для запуска файлом и модулем)
+try:
+    from .keyboards import main_menu, back_menu, admin_ticket_kb
+    from .support_bridge import ADMIN_MSG_TO_TICKET
+    from . import texts
+    from .db import (
+        create_ticket, get_ticket,
+        get_user_limits, set_last_ticket_ts, set_last_call_ts,
+        count_tickets_in_window
+    )
+except ImportError:
+    from keyboards import main_menu, back_menu, admin_ticket_kb
+    from support_bridge import ADMIN_MSG_TO_TICKET
+    import texts
+    from db import (
+        create_ticket, get_ticket,
+        get_user_limits, set_last_ticket_ts, set_last_call_ts,
+        count_tickets_in_window
+    )
 
 user_router = Router()
 
@@ -80,7 +91,6 @@ async def ticket_text(message: Message, state: FSMContext, bot, config):
         created_ts=now,
         created_at=created_at
     )
-
     await set_last_ticket_ts(message.from_user.id, now)
 
     await state.clear()
@@ -100,11 +110,7 @@ async def ticket_text(message: Message, state: FSMContext, bot, config):
     )
 
     try:
-        sent = await bot.send_message(
-            config["admin_id"],
-            admin_text,
-            reply_markup=admin_ticket_kb(ticket_id)
-        )
+        sent = await bot.send_message(config["admin_id"], admin_text, reply_markup=admin_ticket_kb(ticket_id))
         ADMIN_MSG_TO_TICKET[sent.message_id] = ticket_id
     except Exception as e:
         print(f"[ADMIN_SEND_ERROR] {e}")

@@ -2,13 +2,20 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 import time
 
-from .support_bridge import ADMIN_MSG_TO_TICKET
-from .db import get_ticket, delete_ticket, mark_admin_replied
+# FIX: двойные импорты
+try:
+    from .support_bridge import ADMIN_MSG_TO_TICKET
+    from .db import get_ticket, delete_ticket, mark_admin_replied
+except ImportError:
+    from support_bridge import ADMIN_MSG_TO_TICKET
+    from db import get_ticket, delete_ticket, mark_admin_replied
 
 admin_router = Router()
 
+
 def is_admin(user_id: int, config) -> bool:
     return user_id == config["admin_id"]
+
 
 @admin_router.message(F.reply_to_message)
 async def admin_reply_via_reply(message: Message, bot, config):
@@ -33,6 +40,7 @@ async def admin_reply_via_reply(message: Message, bot, config):
     await bot.send_message(ticket["user_id"], f"✉️ Ответ по заявке #{tid}:\n\n{text}")
     await mark_admin_replied(tid, int(time.time()))
     await message.answer(f"✅ Отправлено игроку (заявка #{tid}).")
+
 
 @admin_router.callback_query(F.data.startswith(("tclose:", "tdelete:")))
 async def admin_ticket_actions(c: CallbackQuery, bot, config):
