@@ -1,10 +1,11 @@
 import asyncio
 import time
 import contextlib
+
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 
-# FIX: чтобы работало при запуске файлом и модулем
+# ✅ Работает и при запуске "python -m app.main", и при "python app/main.py"
 try:
     from .settings import BOT_TOKEN, ADMIN_ID
     from .db import init_db, list_open_tickets, delete_ticket, mark_admin_reminded
@@ -34,7 +35,7 @@ async def cleanup_and_remind_loop(bot: Bot, admin_id: int):
                 tid = t["id"]
                 age = now - int(t["created_ts"])
 
-                # автоочистка
+                # автоочистка тикетов старше 30 минут
                 if age >= TICKET_TTL_SEC:
                     await delete_ticket(tid)
                     try:
@@ -47,7 +48,7 @@ async def cleanup_and_remind_loop(bot: Bot, admin_id: int):
                         pass
                     continue
 
-                # напоминания админу если не отвечал
+                # напоминания админу, если он не отвечал
                 last_reply = t.get("last_admin_reply_ts")
                 last_remind = t.get("last_admin_remind_ts") or 0
 
